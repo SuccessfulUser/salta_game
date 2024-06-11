@@ -1,0 +1,32 @@
+    def make_bot_move(self):
+        #check if any of the bots pieces have orange highlights
+        orange_highlighted_pieces = []
+        for row in range(10):
+            for col in range(10):
+                piece = self.board.board[row][col]
+                if piece and piece.player == 'red':
+                    valid_moves = self.board.get_valid_moves(row, col)
+                    for move in valid_moves:
+                        if abs(move[0] - row) == 2 and abs(move[1] - col) == 2:
+                            orange_highlighted_pieces.append((row, col))
+                            break
+
+        #if bot has pieces with orange highlights prioritize making jumps
+        if orange_highlighted_pieces:
+            start_row, start_col = orange_highlighted_pieces[0]  #choose the first highlighted piece
+            valid_moves = self.board.get_valid_moves(start_row, start_col)
+            for move in valid_moves:
+                if abs(move[0] - start_row) == 2 and abs(move[1] - start_col) == 2:
+                    self.board.move_piece(start_row, start_col, move[0], move[1])
+                    self.switch_player()
+                    return
+        else:
+            # if no orange highlights make a random move
+            all_valid_moves = self.board.get_all_valid_moves()
+            if all_valid_moves:
+                move = random.choice(all_valid_moves)
+                start_row, start_col = move[0]
+                end_row, end_col = move[1]
+                self.board.move_piece(start_row, start_col, end_row, end_col)
+                self.switch_player()
+                return
