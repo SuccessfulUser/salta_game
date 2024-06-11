@@ -10,7 +10,6 @@ class SaltPiece:
         self.col = col
 
 
-
 class SaltBoard:
     def __init__(self):
         self.board = [[None] * 10 for _ in range(10)]
@@ -267,8 +266,8 @@ class SaltGameGUI:
             0, 0,
             self.board_size + 2 * self.border_size,
             self.board_size + 2 * self.border_size,
-            fill="brown",
-            outline="brown",  # Добавляем черную обводку
+            fill="bisque3",
+            outline="white",  # Добавляем черную обводку
             width=1  # Ширина
         )
 
@@ -441,7 +440,7 @@ class SaltGameGUI:
         winner_color = "Green" if self.game.winner == "green" else "Red"
         msg = f"The winner is {winner_color}!"
         self.canvas.create_text(self.board_size // 2 + self.border_size, self.board_size // 2 + self.border_size,
-                                text=msg, font=("Arial", 36), fill="red")
+                                text=msg, font=("Arial", 36), fill="black")
     def clear_selection(self):
         self.selected_piece = None
         self.valid_moves = []
