@@ -1,0 +1,436 @@
+import tkinter as tk
+import math
+import random
+
+class SaltPiece:
+    def __init__(self, player, rank, row, col):
+        self.player = player
+        self.rank = rank
+        self.row = row
+        self.col = col
+
+
+class SaltBoard:
+    def __init__(self):
+        self.board = [[None] * 10 for _ in range(10)]
+        self.current_player = 'green'
+        self.moves_without_capture = 0
+        self.initial_ranks = {}  # Словарь для хранения изначальных рангов фишек
+        self.piece_symbols = {}  # Словарь для хранения количества символов на фишках
+        self.piece_initial_symbols = {}  # Словарь для хранения начальных символов фишек
+        self.green_moves = 0
+        self.red_moves = 0
+
+    def check_victory(self):
+        return self.check_victory_by_arrangement()
+
+    def check_victory_by_arrangement(self):
+        green_expected_positions = {
+            '1': [('A', 8), ('C', 8), ('E', 8), ('G', 8), ('I', 8)],
+            '2': [('B', 9), ('D', 9), ('F', 9), ('H', 9)],
+            '3': [('A', 10), ('C', 10), ('E', 10), ('G', 10), ('I', 10)]
+        }
+
+        red_expected_positions = {
+            '1': [('B', 1), ('D', 1), ('F', 1), ('H', 1), ('J', 1)],
+            '2': [('A', 0), ('C', 0), ('E', 0), ('G', 0)],
+            '3': [('A', 2), ('C', 2), ('E', 2), ('G', 2), ('I', 2)]
+        }
+
+        if self.current_player == 'green':
+            player_positions = green_expected_positions
+            enemy_positions = red_expected_positions
+        else:
+            player_positions = red_expected_positions
+            enemy_positions = green_expected_positions
+
+        for rank, positions in player_positions.items():
+            for expected_position in positions:
+                col, row = expected_position
+                if not self.board[row][ord(col) - ord('A')] or self.board[row][ord(col) - ord('A')].rank != int(rank):
+                    return False
+
+        for rank, positions in enemy_positions.items():
+            for expected_position in positions:
+                col, row = expected_position
+                if self.board[row][ord(col) - ord('A')]:
+                    return False
+
+        return True
+
+    def update_move_count(self):
+        if self.current_player == 'green':
+            self.green_moves += 1
+        else:
+            self.red_moves += 1
+
+    def get_move_count(self):
+        return self.green_moves + self.red_moves
+
+    def setup_pieces(self):
+        rank_symbols = ['☼', '☽', '✯']  # символы для рангов (солнце луна звезда)
+
+        # Green pieces setup
+        for i in range(5):
+            # Bottom row (stars, rank 3)
+            piece = SaltPiece('green', 3, 9, 2 * i)
+            self.board[9][2 * i] = piece
+            self.initial_ranks[(9, 2 * i)] = 3
+            self.piece_symbols[piece] = (2 * i) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[2]  # Звезда для ранга 3
+
+            # Middle row (moons, rank 2)
+            piece = SaltPiece('green', 2, 8, 2 * i + 1)
+            self.board[8][2 * i + 1] = piece
+            self.initial_ranks[(8, 2 * i + 1)] = 2
+            self.piece_symbols[piece] = (2 * i + 1) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[1]  # Луна для ранга 2
+
+            # Top row (suns, rank 1)
+            piece = SaltPiece('green', 1, 7, 2 * i)
+            self.board[7][2 * i] = piece
+            self.initial_ranks[(7, 2 * i)] = 1
+            self.piece_symbols[piece] = (2 * i) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[0]  # Солнце для ранга 1
+
+        # Red pieces setup
+        for i in range(5):
+            # Top row (stars, rank 3)
+            piece = SaltPiece('red', 3, 0, 2 * i + 1)
+            self.board[0][2 * i + 1] = piece
+            self.initial_ranks[(0, 2 * i + 1)] = 3
+            self.piece_symbols[piece] = (9 - (2 * i + 1)) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[2]  # Звезда для ранга 3
+
+            # Middle row (moons, rank 2)
+            piece = SaltPiece('red', 2, 1, 2 * i)
+            self.board[1][2 * i] = piece
+            self.initial_ranks[(1, 2 * i)] = 2
+            self.piece_symbols[piece] = (9 - (2 * i)) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[1]  # Луна для ранга 2
+
+            # Bottom row (suns, rank 1)
+            piece = SaltPiece('red', 1, 2, 2 * i + 1)
+            self.board[2][2 * i + 1] = piece
+            self.initial_ranks[(2, 2 * i + 1)] = 1
+            self.piece_symbols[piece] = (9 - (2 * i + 1)) // 2 + 1
+            self.piece_initial_symbols[piece] = rank_symbols[0]  # Солнце для ранга 1
+
+    def move_piece(self, start_row, start_col, end_row, end_col):
+        piece = self.board[start_row][start_col]
+        if not piece:
+            return False  # нет фишки на начальной позиции
+
+        # может ли фишка двигаться на указанную клетку
+        if (end_row, end_col) not in self.get_valid_moves(start_row, start_col):
+            return False  # неправильный ход
+
+        # если ход допустим перемещаем фишку
+        self.board[end_row][end_col] = piece
+        self.board[start_row][start_col] = None
+        piece.row = end_row
+        piece.col = end_col
+
+        return True
+
+    def switch_player(self):
+        self.current_player = "green" if self.current_player == "red" else "red"
+
+    def get_all_valid_moves(self):
+        all_valid_moves = []
+        for row in range(10):
+            for col in range(10):
+                if self.board[row][col] and self.board[row][col].player == self.current_player:
+                    valid_moves = self.get_valid_moves(row, col)
+                    for move in valid_moves:
+                        all_valid_moves.append(((row, col), move))
+        return all_valid_moves
+
+    def get_valid_moves(self, row, col, check_jumps=False):
+        valid_moves = []
+        piece = self.board[row][col]
+        if not piece or piece.player != self.current_player:
+            return valid_moves
+
+        move_directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]  # четыре направления для движения
+        jump_directions = [(1, 1), (1, -1)] if self.current_player == 'green' else [(-1, 1), (
+        -1, -1)]  # направления для прыжков только вперед
+
+        if not check_jumps:
+            for dir_row, dir_col in move_directions:
+                next_row, next_col = row + dir_row, col + dir_col
+                if 0 <= next_row < 10 and 0 <= next_col < 10:
+                    if not self.board[next_row][next_col]:
+                        valid_moves.append((next_row, next_col))
+
+        for dir_row, dir_col in jump_directions:
+            next_row, next_col = row - dir_row, col - dir_col
+            jump_row, jump_col = next_row - dir_row, next_col - dir_col
+
+            if 0 <= next_row < 10 and 0 <= next_col < 10 and 0 <= jump_row < 10 and 0 <= jump_col < 10:
+                if self.board[next_row][next_col] and self.board[next_row][next_col].player != self.current_player:
+                    if not self.board[jump_row][jump_col]:
+                        valid_moves.append((jump_row, jump_col))
+
+        return valid_moves
+
+
+class SaltGame:
+    def __init__(self):
+        self.board = SaltBoard()
+        self.board.setup_pieces()
+        self.moves = 0
+        self.winner = None
+        self.current_player = 'green'
+
+    def switch_player(self):
+        self.board.update_move_count()
+        if self.board.check_victory():
+            self.winner = self.board.current_player
+            if self.winner == 'green':
+                self.board.switch_player()
+                self.board.update_move_count()
+                self.winner = 'red'
+        elif self.board.get_move_count() >= 120:
+            self.winner = 'green' if self.board.green_moves < self.board.red_moves else 'red'
+        else:
+            self.board.switch_player()
+
+
+class SaltGameGUI:
+    def __init__(self, master, game):
+        # новый атрибут для хранения координат фишек подсвеченных оранжевым
+        self.orange_highlighted_pieces = []
+        self.master = master
+        self.game = game
+        self.cell_size = 60
+        self.board_size = 10 * self.cell_size
+        self.border_size = 60  # размер границы
+
+        self.selected_piece = None  # переменная для хранения выбранной фишки
+        self.valid_moves = []  #список для хранения допустимых ходов
+
+        self.canvas = tk.Canvas(master, width=self.board_size + 2 * self.border_size,
+                                height=self.board_size + 2 * self.border_size, bg="white")
+        self.canvas.pack()
+
+        self.draw_board()
+
+        #обработчик  клика на холст
+        self.canvas.bind("<Button-1>", self.handle_click)
+
+    def clear_highlights(self, exclude_orange=False):
+        self.canvas.delete("highlight") # удаляем все highlight
+        if exclude_orange:
+            for piece in self.orange_highlighted_pieces:
+                self.draw_highlight(piece, "orange")
+    def draw_board(self):
+        #  коричневый фон вокруг всех обозначений с черной границей
+        self.canvas.create_rectangle(
+            0, 0,
+            self.board_size + 2 * self.border_size,
+            self.board_size + 2 * self.border_size,
+            fill="bisque3",
+            outline="white",  # Добавляем черную обводку
+            width=1  # Ширина
+        )
+
+        #  буквенно цифровые координаты
+        for i in range(10):
+            x_letter_coord = i * self.cell_size + self.cell_size // 2 + self.border_size
+            y_letter_top_coord = self.border_size // 2 + 5  # поднимаем буквы
+            y_letter_bottom_coord = self.board_size + self.border_size + self.border_size // 2 + 5  # поднимаем буквы
+            self.canvas.create_text(x_letter_coord, y_letter_top_coord, text=chr(ord('A') + i), font=('Arial', 14),
+                                    anchor='n', fill="black")
+            self.canvas.create_text(x_letter_coord, y_letter_bottom_coord, text=chr(ord('A') + i), font=('Arial', 14),
+                                    anchor='n', fill="black")
+
+            y_number_coord = i * self.cell_size + self.cell_size // 2 + self.border_size
+            x_number_left_coord = self.border_size // 2  # сдвигаем числа левее
+            x_number_right_coord = self.board_size + self.border_size + self.border_size // 2  # сдвигаем числа левее
+            self.canvas.create_text(x_number_left_coord, y_number_coord, text=str(i + 1), font=('Arial', 14),
+                                    anchor='n', fill="black")
+            self.canvas.create_text(x_number_right_coord, y_number_coord, text=str(i + 1), font=('Arial', 14),
+                                    anchor='n', fill="black")
+
+        #сетка доски
+        for row in range(10):
+            for col in range(10):
+                x1, y1 = col * self.cell_size + self.border_size, row * self.cell_size + self.border_size
+                x2, y2 = x1 + self.cell_size, y1 + self.cell_size
+                color = "white" if (row + col) % 2 == 0 else "lightgray"
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
+
+        #фишки
+        for row in range(10):
+            for col in range(10):
+                piece = self.game.board.board[row][col]
+                if piece:
+                    self.draw_piece(row, col, piece)
+
+    def draw_piece(self, row, col, piece):
+        x_center = col * self.cell_size + self.cell_size // 2 + self.border_size
+        y_center = row * self.cell_size + self.cell_size // 2 + self.border_size
+        color = "green" if piece.player == 'green' else "red"
+        radius = self.cell_size // 2.5
+
+        # ФОРМА фишки
+        self.canvas.create_oval(x_center - radius, y_center - radius, x_center + radius, y_center + radius, fill=color,
+                                outline="black")
+
+        symbol = self.game.board.piece_initial_symbols[piece]
+        num_symbols = self.game.board.piece_symbols[piece]
+
+        # угла между символами
+        angle_step = 360 / num_symbols
+
+        # радиус для символов
+        symbol_radius = radius - 10
+
+        # отрисовываем каждый символ на окружности фишки
+        for i in range(num_symbols):
+            angle = math.radians(i * angle_step)
+            x = x_center + symbol_radius * math.cos(angle)
+            y = y_center + symbol_radius * math.sin(angle)
+
+            # если символ один сдвигаем в центр фишки
+            if num_symbols == 1:
+                x, y = x_center, y_center
+
+            self.canvas.create_text(x, y, text=symbol, font=('Arial', 10, 'bold'), fill="black")
+
+    def highlight_potential_jumps(self):
+        # Очищаем оранжевые подсветки
+        self.clear_highlights()
+        # Очищаем список координат фишек подсвеченных
+        self.orange_highlighted_pieces.clear()
+
+        # сбрасываем  обязательность прыжка
+        self.must_jump = False
+
+        # перебираем все фишки текущего игрока
+        for row in range(10):
+            for col in range(10):
+                piece = self.game.board.board[row][col]
+                if piece and piece.player == self.game.board.current_player:
+                    valid_moves = self.game.board.get_valid_moves(row, col)
+                    for move in valid_moves:
+                        if abs(move[0] - row) == 2 and abs(move[1] - col) == 2:
+                            self.draw_jump_highlight((row, col), "orange")
+                            self.orange_highlighted_pieces.append((row, col))
+                            self.must_jump = True
+                            break  # выходим из цикла после первого найденного хода через прыжок
+
+    def handle_click(self, event):
+        if self.game.winner:
+            return
+
+        col = (event.x - self.border_size) // self.cell_size
+        row = (event.y - self.border_size) // self.cell_size
+
+        if 0 <= row < 10 and 0 <= col < 10:
+            piece = self.game.board.board[row][col]
+            if self.selected_piece is None:
+                # проверяем есть ли оранжевая подсветка
+                if (row, col) in self.orange_highlighted_pieces and piece.player == self.game.board.current_player:
+                    self.selected_piece = (row, col)
+                    self.valid_moves = self.game.board.get_valid_moves(row, col)
+                    self.clear_highlights(
+                        exclude_orange=True)  # Очищаем подсветку перед рисованием новой, исключая оранжевую
+                    self.draw_board()
+                    for move in self.valid_moves:
+                        if abs(move[0] - row) == 2 and abs(move[1] - col) == 2:  # Добавляем проверку на прыжок
+                            self.draw_highlight(move, "blue")
+                # если нет оранжевых подсветок разрешаем ходить любыми фишками
+                elif not self.orange_highlighted_pieces:
+                    if piece and piece.player == self.game.board.current_player:
+                        self.selected_piece = (row, col)
+                        self.valid_moves = self.game.board.get_valid_moves(row, col)
+                        self.clear_highlights(
+                            exclude_orange=True)  # Очищаем подсветку перед рисованием новой, исключая оранжевую
+                        self.draw_board()
+                        for move in self.valid_moves:
+                            self.draw_highlight(move, "blue")
+            else:
+                # является ли выбранная фишка с оранжевой подсветкой
+                if self.selected_piece in self.orange_highlighted_pieces:
+                    if (row, col) in self.valid_moves and abs(row - self.selected_piece[0]) == 2 and abs(col - self.selected_piece[1]) == 2:
+                        moved = self.game.board.move_piece(self.selected_piece[0], self.selected_piece[1], row, col)
+                        if moved:
+                            self.selected_piece = None
+                            self.valid_moves = []
+                            self.clear_highlights()
+                            self.game.switch_player()
+                            self.draw_board()
+                            self.highlight_potential_jumps()
+                elif (row, col) in self.valid_moves:
+                    moved = self.game.board.move_piece(self.selected_piece[0], self.selected_piece[1], row, col)
+                    if moved:
+                        self.selected_piece = None
+                        self.valid_moves = []
+                        self.clear_highlights()
+                        self.game.switch_player()
+                        self.draw_board()
+                        self.highlight_potential_jumps()
+                else:
+                    if piece and piece.player == self.game.board.current_player:
+                        self.selected_piece = (row, col)
+                        self.valid_moves = self.game.board.get_valid_moves(row, col)
+                        self.clear_highlights(
+                            exclude_orange=True)
+                        self.draw_board()
+                        for move in self.valid_moves:
+                            self.draw_highlight(move, "blue")
+                    else:
+                        self.clear_selection()
+
+        # проверка наличия оранжевой подсветки перед разрешением хода
+        if self.selected_piece is None:
+            self.orange_highlighted_pieces.clear()
+            for row in range(10):
+                for col in range(10):
+                    piece = self.game.board.board[row][col]
+                    if piece and piece.player == self.game.board.current_player:
+                        valid_moves = self.game.board.get_valid_moves(row, col)
+                        for move in valid_moves:
+                            if abs(move[0] - row) == 2 and abs(move[1] - col) == 2:
+                                self.orange_highlighted_pieces.append((row, col))
+                                break
+
+        if self.game.winner:
+            self.display_winner()
+
+    def display_winner(self):
+        winner_color = "Green" if self.game.winner == "green" else "Red"
+        msg = f"The winner is {winner_color}!"
+        self.canvas.create_text(self.board_size // 2 + self.border_size, self.board_size // 2 + self.border_size,
+                                text=msg, font=("Arial", 36), fill="black")
+    def clear_selection(self):
+        self.selected_piece = None
+        self.valid_moves = []
+        self.clear_highlights()
+        self.highlight_potential_jumps()
+        self.draw_board()
+
+    def draw_highlight(self, position, color):
+        x1 = position[1] * self.cell_size + self.border_size
+        y1 = position[0] * self.cell_size + self.border_size
+        x2 = x1 + self.cell_size
+        y2 = y1 + self.cell_size
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline=color, width=3)
+
+    #метод для подсветки клеток на которые может прыгнуть фишка через фишку соперника
+    def draw_jump_highlight(self, position, color):
+        x1 = position[1] * self.cell_size + self.border_size
+        y1 = position[0] * self.cell_size + self.border_size
+        x2 = x1 + self.cell_size
+        y2 = y1 + self.cell_size
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline=color, width=3, stipple="gray50")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("Salta")
+    game = SaltGame()
+    gui = SaltGameGUI(root, game)
+    root.mainloop()
