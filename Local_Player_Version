@@ -1,6 +1,6 @@
 import tkinter as tk
 import math
-import random
+
 
 class SaltPiece:
     def __init__(self, player, rank, row, col):
@@ -153,8 +153,8 @@ class SaltBoard:
             return valid_moves
 
         move_directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]  # четыре направления для движения
-        jump_directions = [(1, 1), (1, -1)] if self.current_player == 'green' else [(-1, 1), (
-        -1, -1)]  # направления для прыжков только вперед
+        # направления для прыжков только вперед
+        jump_directions = [(1, 1), (1, -1)] if self.current_player == 'green' else [(-1, 1), (-1, -1)]
 
         if not check_jumps:
             for dir_row, dir_col in move_directions:
@@ -208,7 +208,7 @@ class SaltGameGUI:
         self.border_size = 60  # размер границы
 
         self.selected_piece = None  # переменная для хранения выбранной фишки
-        self.valid_moves = []  #список для хранения допустимых ходов
+        self.valid_moves = []  # список для хранения допустимых ходов
 
         self.canvas = tk.Canvas(master, width=self.board_size + 2 * self.border_size,
                                 height=self.board_size + 2 * self.border_size, bg="white")
@@ -216,14 +216,15 @@ class SaltGameGUI:
 
         self.draw_board()
 
-        #обработчик  клика на холст
+        # обработчик  клика на холст
         self.canvas.bind("<Button-1>", self.handle_click)
 
     def clear_highlights(self, exclude_orange=False):
-        self.canvas.delete("highlight") # удаляем все highlight
+        self.canvas.delete("highlight")  # удаляем все highlight
         if exclude_orange:
             for piece in self.orange_highlighted_pieces:
                 self.draw_highlight(piece, "orange")
+
     def draw_board(self):
         #  коричневый фон вокруг всех обозначений с черной границей
         self.canvas.create_rectangle(
@@ -253,15 +254,15 @@ class SaltGameGUI:
             self.canvas.create_text(x_number_right_coord, y_number_coord, text=str(i + 1), font=('Arial', 14),
                                     anchor='n', fill="black")
 
-        #сетка доски
+        # сетка доски
         for row in range(10):
             for col in range(10):
                 x1, y1 = col * self.cell_size + self.border_size, row * self.cell_size + self.border_size
                 x2, y2 = x1 + self.cell_size, y1 + self.cell_size
-                color = "white" if (row + col) % 2 == 0 else "lightgray"
+                color = "white" if (row + col) % 2 == 0 else "light gray"
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color)
 
-        #фишки
+        # фишки
         for row in range(10):
             for col in range(10):
                 piece = self.game.board.board[row][col]
@@ -354,7 +355,8 @@ class SaltGameGUI:
             else:
                 # является ли выбранная фишка с оранжевой подсветкой
                 if self.selected_piece in self.orange_highlighted_pieces:
-                    if (row, col) in self.valid_moves and abs(row - self.selected_piece[0]) == 2 and abs(col - self.selected_piece[1]) == 2:
+                    if ((row, col) in self.valid_moves and abs(row - self.selected_piece[0]) == 2 and
+                            abs(col - self.selected_piece[1]) == 2):
                         moved = self.game.board.move_piece(self.selected_piece[0], self.selected_piece[1], row, col)
                         if moved:
                             self.selected_piece = None
@@ -405,6 +407,7 @@ class SaltGameGUI:
         msg = f"The winner is {winner_color}!"
         self.canvas.create_text(self.board_size // 2 + self.border_size, self.board_size // 2 + self.border_size,
                                 text=msg, font=("Arial", 36), fill="black")
+
     def clear_selection(self):
         self.selected_piece = None
         self.valid_moves = []
@@ -419,7 +422,7 @@ class SaltGameGUI:
         y2 = y1 + self.cell_size
         self.canvas.create_rectangle(x1, y1, x2, y2, outline=color, width=3)
 
-    #метод для подсветки клеток на которые может прыгнуть фишка через фишку соперника
+    # метод для подсветки клеток на которые может прыгнуть фишка через фишку соперника
     def draw_jump_highlight(self, position, color):
         x1 = position[1] * self.cell_size + self.border_size
         y1 = position[0] * self.cell_size + self.border_size
@@ -430,7 +433,8 @@ class SaltGameGUI:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.title("Salta")
+    root.title("Salt")
     game = SaltGame()
     gui = SaltGameGUI(root, game)
     root.mainloop()
+    
